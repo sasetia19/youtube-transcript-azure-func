@@ -34,13 +34,24 @@ jobs:
           python -m venv venv
           source venv/bin/activate
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install dependencies into package folder
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt --target package
+
+      - name: Copy app code
+        run: |
+          cp -r * package/
+
+
 
       # Optional: Add step to run tests here
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+        run: |
+          cd package
+          zip -r ../release.zip .
+
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -82,4 +93,5 @@ jobs:
           app-name: 'TranscriberAPI2'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+
           
