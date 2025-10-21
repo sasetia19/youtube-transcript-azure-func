@@ -11,14 +11,14 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
-  PYTHON_VERSION: '3.11' # set this to the python version to use (supports 3.6, 3.7, 3.8)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'deploy' # folder to deploy
+  PYTHON_VERSION: '3.11' # Python version for Azure Function
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # Required for actions/checkout
 
     steps:
       - name: Checkout repository
@@ -29,44 +29,38 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and start virtual environment
+      - name: Prepare deploy folder
         run: |
-          python -m venv venv
-          source venv/bin/activate
+          rm -rf deploy
+          mkdir deploy
+          # Copy app code into deploy folder, excluding .github and existing deploy folder
+          shopt -s extglob
+          cp -r !(deploy|.github) deploy/
 
-      - name: Install dependencies into package folder
+      - name: Install dependencies into deploy folder
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt --target package
-
-      - name: Copy app code
-        run: |
-          cp -r * package/
-
-
+          pip install -r requirements.txt --target deploy
 
       # Optional: Add step to run tests here
 
       - name: Zip artifact for deployment
         run: |
-          cd package
+          cd deploy
           zip -r ../release.zip .
-
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write # Required for requesting JWT
+      contents: read # Required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -76,7 +70,7 @@ jobs:
 
       - name: Unzip artifact for deployment
         run: |
-          unzip release.zip
+          unzip release.zip -d deploy
           rm release.zip
         
       - name: Login to Azure
@@ -86,12 +80,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7317E31C08A64F9592FDF7807AC2D63A }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CD6D1C44C1734D4499026F132E45D913 }}
 
-      - name: 'Deploy to Azure Functions'
+      - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
         id: deploy-to-function
         with:
           app-name: 'TranscriberAPI2'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-
-          
+          package: deploy
