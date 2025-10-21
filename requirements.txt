@@ -1,3 +1,4 @@
 flask
+requests
 azure-functions
 youtube-transcript-api
