@@ -89,6 +89,22 @@ The feedback Function does not log request bodies, emails, message text, the ses
 
 Both the Azure Function and Apps Script prefix text values beginning with spreadsheet formula characters (including after leading whitespace) with an apostrophe before writing. This prevents submitted text from being evaluated as a formula.
 
+## Transcript Failure Monitoring
+
+The transcript Function records only a category when a fetch fails: `transcript_unavailable`, `video_unavailable`, or `upstream_error`. It does not log the video ID, URL, transcript, upstream exception text, or stack trace. The browser displays friendly error messages and does not write diagnostic details to the console.
+
+To retain and query these events, enable Application Insights for **TranscriberAPI2** in Azure. Azure may configure the Function App's `APPLICATIONINSIGHTS_CONNECTION_STRING` setting automatically; if configuring it yourself, add that exact setting in Azure App Settings. The telemetry connection string is not a Vite/frontend variable. In Application Insights **Logs**, run:
+
+```kusto
+traces
+| where message startswith "transcript_fetch_failed category="
+| parse message with "transcript_fetch_failed category=" category:string
+| summarize failures = count() by category, bin(timestamp, 1d)
+| order by timestamp desc
+```
+
+This gives you daily counts by failure category without retaining the exception details. Verify the query with a controlled test video that has no captions after deployment.
+
 ## Reading Feedback
 
 Open the `feedback` worksheet in the spreadsheet. Filter the `source` column (`tab`, `survey`, or `failure`) to review each type. Only people with access to the spreadsheet can read the responses.
