@@ -12,7 +12,7 @@ Keep the existing `APPLICATIONINSIGHTS_CONNECTION_STRING` value on TranscriberAP
 | `PYTHON_APPLICATIONINSIGHTS_ENABLE_TELEMETRY` | `true` |
 | `AzureFunctionsJobHost__telemetryMode` | `OpenTelemetry` |
 
-`AzureFunctionsJobHost__telemetryMode` is the app-setting override for `host.json`'s `telemetryMode`; it leaves the shared `host.json` unchanged. The API2 workflow installs `requirements-api2.txt`, which contains `azure-monitor-opentelemetry`, the package the Functions Python worker imports when `PYTHON_APPLICATIONINSIGHTS_ENABLE_TELEMETRY=true`. The Functions worker initializes the exporter; the v1 function only emits structured log records with the custom-event name. No second distro is initialized. No connection string is added to source or workflow files.
+`AzureFunctionsJobHost__telemetryMode` is the app-setting override for `host.json`'s `telemetryMode`; it leaves the shared `host.json` unchanged. The API2 workflow installs both dependency lists into Azure Functions' documented `deploy/.python_packages/lib/site-packages` directory. `requirements-api2.txt` contains `azure-monitor-opentelemetry`, the package the Functions Python worker imports when `PYTHON_APPLICATIONINSIGHTS_ENABLE_TELEMETRY=true`. The workflow runs an import smoke test before packaging. The Functions worker initializes the exporter; the v1 function only emits structured log records with the custom-event name. No second distro is initialized. No connection string is added to source or workflow files.
 
 Do not set `TRANSCRIPT_ANALYTICS_ENABLED` on TranscriberAPI. Keep Application Insights' default client-IP masking enabled; do not add `client.address` or IP/user identifiers to custom dimensions.
 

@@ -40,8 +40,8 @@ jobs:
       - name: Install dependencies into deploy folder
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt --target deploy
-          pip install -r requirements-api2.txt --target deploy
+          pip install -r requirements.txt -r requirements-api2.txt --target deploy/.python_packages/lib/site-packages
+          python -c "import sys; sys.path.insert(0, 'deploy/.python_packages/lib/site-packages'); from azure.monitor.opentelemetry import configure_azure_monitor"
 
       # Optional: Add step to run tests here
 
