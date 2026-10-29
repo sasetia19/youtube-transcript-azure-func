@@ -10,6 +10,7 @@ TRANSCRIPT_ANALYTICS_ENABLED = (
 
 def _create_logger():
     if not TRANSCRIPT_ANALYTICS_ENABLED:
+        logging.getLogger().info("transcript_analytics_disabled")
         return None
     try:
         from microsoft.opentelemetry import use_microsoft_opentelemetry
@@ -20,8 +21,13 @@ def _create_logger():
         )
         event_logger = logging.getLogger(LOGGER_NAME)
         event_logger.setLevel(logging.INFO)
+        logging.getLogger().info("transcript_analytics_initialized")
         return event_logger
-    except Exception:
+    except Exception as error:
+        logging.getLogger().warning(
+            "transcript_analytics_initialization_failed exception_type=%s",
+            type(error).__name__,
+        )
         return None
 
 
@@ -57,7 +63,11 @@ def emit_transcript_request_completed(
                 "length_bucket": length_bucket,
             },
         )
-    except Exception:
+    except Exception as error:
+        logging.getLogger().warning(
+            "transcript_analytics_emit_failed exception_type=%s",
+            type(error).__name__,
+        )
         return
 
 
