@@ -41,6 +41,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt --target deploy
+          pip install -r requirements-api2.txt --target deploy
 
       # Optional: Add step to run tests here
 

@@ -36,6 +36,61 @@ class TranscriptErrorClassificationTests(unittest.TestCase):
         error = RuntimeError("secret video id and upstream response")
         self.assertEqual(errors.classify_transcript_error(error), "upstream_error")
 
+    def test_api2_maps_proxy_and_rate_limit_exceptions(self):
+        for error_name in ("RequestBlocked", "IpBlocked", "ProxyError"):
+            error_type = type(error_name, (Exception,), {})
+            with self.subTest(error_name=error_name):
+                self.assertEqual(
+                    errors.classify_transcript_error(
+                        error_type("proxy details"), analytics_enabled=True
+                    ),
+                    "proxy_blocked",
+                )
+
+        too_many_requests = type("TooManyRequests", (Exception,), {})
+        self.assertEqual(
+            errors.classify_transcript_error(
+                too_many_requests(), analytics_enabled=True
+            ),
+            "rate_limited",
+        )
+
+    def test_api2_maps_wrapped_http_429_and_invalid_responses(self):
+        request_failed = type("YouTubeRequestFailed", (Exception,), {})
+        error = request_failed()
+        error.reason = "429 Client Error: Too Many Requests"
+        self.assertEqual(
+            errors.classify_transcript_error(error, analytics_enabled=True),
+            "rate_limited",
+        )
+
+        invalid_response = type("InvalidTranscriptResponse", (Exception,), {})
+        self.assertEqual(
+            errors.classify_transcript_error(
+                invalid_response(), analytics_enabled=True
+            ),
+            "invalid_response",
+        )
+
+    def test_api2_maps_timeout_network_and_invalid_video(self):
+        for error_name, expected in (
+            ("ReadTimeout", "timeout"),
+            ("ConnectionError", "network_error"),
+            ("InvalidVideoId", "invalid_url"),
+        ):
+            error_type = type(error_name, (Exception,), {})
+            with self.subTest(error_name=error_name):
+                self.assertEqual(
+                    errors.classify_transcript_error(
+                        error_type(), analytics_enabled=True
+                    ),
+                    expected,
+                )
+
+    def test_legacy_classification_remains_unchanged_when_api2_flag_is_off(self):
+        blocked = type("RequestBlocked", (Exception,), {})
+        self.assertEqual(errors.classify_transcript_error(blocked()), "upstream_error")
+
 
 if __name__ == "__main__":
     unittest.main()
