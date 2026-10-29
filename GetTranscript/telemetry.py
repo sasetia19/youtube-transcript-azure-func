@@ -13,12 +13,8 @@ def _create_logger():
         logging.getLogger().info("transcript_analytics_disabled")
         return None
     try:
-        from microsoft.opentelemetry import use_microsoft_opentelemetry
+        import azure.monitor.opentelemetry  # noqa: F401
 
-        use_microsoft_opentelemetry(
-            enable_azure_monitor=True,
-            logger_name=LOGGER_NAME,
-        )
         event_logger = logging.getLogger(LOGGER_NAME)
         event_logger.setLevel(logging.INFO)
         logging.getLogger().info("transcript_analytics_initialized")
